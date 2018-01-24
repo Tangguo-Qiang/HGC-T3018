@@ -1,0 +1,29 @@
+#ifndef __SYSDEFS_H
+#define __SYSDEFS_H
+
+#define __SENSOR_RH
+#define __SENSOR_CO2
+#define __SENSOR_PM25
+
+//#define MAIN_VERSION  3
+//#define SUB_VERSION		01
+
+#define MAIN_VERSION  2
+#define SUB_VERSION		10
+
+#define __SELF_ADJUSTMOTO
+//#define __WIFI_VALIDE
+
+//#define HD_GJ_160C
+#define HD_GJ_360C
+//#define HD_GJ_600Z
+//#define DL_GJ_520Z
+//#define DL_GJ_360Z
+//#define HD_GJ_300Z
+//#define HD_GJ_160Z
+
+#if defined(DL_GJ_520Z)||defined(DL_GJ_360Z)
+	#define __DALE_MACHINE
+#endif
+
+#endif
