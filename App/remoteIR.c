@@ -42,6 +42,7 @@ void ParseRemoteIR(byte order)
 //			PostMessage(MessageParaUpdate, PARA_XFMOTODUTY);
 //			CommTalk_Trans(COMM_BEEPONE);
 			SeqOperDelay =SEQUENCEOPER_DELAY_100MS;
+			App.Menu.MainForm.LoadFresh |= 0x02;
 			
 			break;
 		case IR_REMOTE_AIRFLOW_MINUS:
@@ -52,6 +53,7 @@ void ParseRemoteIR(byte order)
 //		PostMessage(MessageParaUpdate, PARA_XFMOTODUTY);
 //		CommTalk_Trans(COMM_BEEPONE);
 			SeqOperDelay =SEQUENCEOPER_DELAY_100MS;
+			App.Menu.MainForm.LoadFresh |= 0x02;
 				
 			break;
 		case IR_REMOTE_LOCK:
@@ -60,7 +62,7 @@ void ParseRemoteIR(byte order)
 			else
 				App.SysCtrlPara.ChildLock = CHILD_UNLOCK;
 			PostMessage(MessageParaUpdate, PARA_CHILDLOCK);
-			CommTalk_Trans(COMM_BEEPONE);
+			System.Device.Beep.BeepOn(BEEP_LONG);
 			
 			break;
 		case IR_REMOTE_VENTIRATE_PLUS:
@@ -69,7 +71,7 @@ void ParseRemoteIR(byte order)
 		  if(App.SysCtrlPara.VentilateRate>RATE10TO12)
 				App.SysCtrlPara.VentilateRate=RATE10TO12;
 			PostMessage(MessageParaUpdate, PARA_VENTILATE);
-			CommTalk_Trans(COMM_BEEPONE);
+			System.Device.Beep.BeepOn(BEEP_LONG);
 #endif	
 			break;
 		case IR_REMOTE_VENTIRATE_MINUS:
@@ -78,16 +80,21 @@ void ParseRemoteIR(byte order)
 		  if(App.SysCtrlPara.VentilateRate<RATE10TO08)
 				App.SysCtrlPara.VentilateRate=RATE10TO08;
 			PostMessage(MessageParaUpdate, PARA_VENTILATE);
-			CommTalk_Trans(COMM_BEEPONE);
+			System.Device.Beep.BeepOn(BEEP_LONG);
 #endif	
 			break;
 		case IR_REMOTE_POWER:
 			if(App.SysCtrlPara.Power == POWER_OFF)
+			{
 				App.SysCtrlPara.Power = POWER_ON;
+				System.Device.Beep.BeepOn(BEEP_POWERON);
+			}
 			else
+			{
 				App.SysCtrlPara.Power = POWER_OFF;
+				System.Device.Beep.BeepOn(BEEP_POWEROFF);
+			}
 			PostMessage(MessageParaUpdate, PARA_POWER_SET);
-			CommTalk_Trans(COMM_BEEPLONG);
 			
 			break;
 		case IR_REMOTE_MUTE:
@@ -96,25 +103,25 @@ void ParseRemoteIR(byte order)
 			else
 				App.SysCtrlPara.MuteSet = MUTEMODE_OFF;
 			PostMessage(MessageParaUpdate, PARA_MUTEMODE);
-			CommTalk_Trans(COMM_BEEPONE);
+			System.Device.Beep.BeepOn(BEEP_LONG);
 			
 			break;
 		case IR_REMOTE_CIRCLEOUT:
 			App.SysCtrlPara.CircleModeSet = CIRCLEMODE_OUT;
 			PostMessage(MessageParaUpdate, PARA_CIRCLEMODE);
-			CommTalk_Trans(COMM_BEEPONE);
+			System.Device.Beep.BeepOn(BEEP_LONG);
 		
 			break;
 		case IR_REMOTE_CIRCLEIN:
 			App.SysCtrlPara.CircleModeSet = CIRCLEMODE_IN;
 			PostMessage(MessageParaUpdate, PARA_CIRCLEMODE);			
-			CommTalk_Trans(COMM_BEEPONE);
+			System.Device.Beep.BeepOn(BEEP_LONG);
 		
 			break;
 		case IR_REMOTE_CIRCLEAUTO:
 			App.SysCtrlPara.CircleModeSet = CIRCLEMODE_AUTO;
 			PostMessage(MessageParaUpdate, PARA_CIRCLEMODE);			
-			CommTalk_Trans(COMM_BEEPONE);
+			System.Device.Beep.BeepOn(BEEP_LONG);
 		
 			break;
 		
@@ -124,11 +131,10 @@ void ParseRemoteIR(byte order)
 		  if(App.SysCtrlPara.ThermalModeSet>TEMPMODE_OFF)
 				App.SysCtrlPara.ThermalModeSet=TEMPMODE_AUTO;
 			PostMessage(MessageParaUpdate, PARA_THERMALMODE);
-			CommTalk_Trans(COMM_BEEPONE);
-		
+			System.Device.Beep.BeepOn(BEEP_LONG);
 #else
  #ifdef __AUXI_HEATER
-   #ifdef HD_GJ_160Z
+   #ifdef HD_GJ_180Z
 			if(App.SysCtrlPara.AuxiliaryHeatSet==HEATER_OFF)
 				App.SysCtrlPara.AuxiliaryHeatSet = HEATER_FULL;
 			else
@@ -140,7 +146,7 @@ void ParseRemoteIR(byte order)
 				App.SysCtrlPara.AuxiliaryHeatSet = HEATER_OFF;						
    #endif
 			PostMessage(MessageParaUpdate, PARA_HEATSET);
-			CommTalk_Trans(COMM_BEEPONE);
+			System.Device.Beep.BeepOn(BEEP_LONG);
  #endif
 #endif			
 			break;
@@ -151,8 +157,22 @@ void ParseRemoteIR(byte order)
 				App.SysCtrlPara.ShutTimer = 0;
 			}
 			PostMessage(MessageParaUpdate, PARA_WORKMODE);			
-			CommTalk_Trans(COMM_BEEPONE);			
+			System.Device.Beep.BeepOn(BEEP_SHORT);			
 			
+			break;
+		case IR_REMOTE_HEATER:
+			App.SysCtrlPara.AuxiliaryHeatSet++;
+			if(App.SysCtrlPara.AuxiliaryHeatSet>HEATER_FULL)
+				App.SysCtrlPara.AuxiliaryHeatSet = HEATER_OFF;
+			PostMessage(MessageParaUpdate, PARA_HEATSET);
+			System.Device.Beep.BeepOn(BEEP_LONG);
+			break;
+		case IR_REMOTE_CIRCLEMODE:
+			App.SysCtrlPara.CircleModeSet++;
+			if(App.SysCtrlPara.CircleModeSet>CIRCLEMODE_IN)
+				App.SysCtrlPara.CircleModeSet = CIRCLEMODE_AUTO;
+			PostMessage(MessageParaUpdate, PARA_CIRCLEMODE);
+			System.Device.Beep.BeepOn(BEEP_LONG);
 			break;
 		default:
 			break;

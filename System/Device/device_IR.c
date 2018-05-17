@@ -15,8 +15,8 @@
 #define IR_GPIO_PORT          GPIOA                /* Port which IR is connected */
 #define IR_GPIO_CLK           RCC_AHBPeriph_GPIOA /* Clock of Port which IR is connected */
 #define IR_GPIO_PIN           GPIO_Pin_1           /* Pin which IR is connected */
-#define IR_EXTI_PORT_SOURCE   GPIO_PortSourceGPIOA /* IR EXTI Port source */
-#define IR_EXTI_PIN_SOURCE    GPIO_PinSource1      /* IR EXTI Pin source */
+#define IR_EXTI_PORT_SOURCE   EXTI_PortSourceGPIOA /* IR EXTI Port source */
+#define IR_EXTI_PIN_SOURCE    EXTI_PinSource1      /* IR EXTI Pin source */
 #define IR_EXTI_IRQn          EXTI0_1_IRQn           /* IR EXTI IRQ */
 #define IR_EXTI_LINE          EXTI_Line1           /* IR EXTI line */
 #define IR_EXTI_IRQHandler    EXTI0_1_IRQHandler     /* IR IRQ handler */
@@ -233,7 +233,7 @@ void IRSystick1000Routine(void)
 	}
 }
 
-/* I/O线中断，中断线为PA15*/
+/* I/O线中断，中断线为PA1*/
 void IR_EXTI_IRQHandler(void)
 {
 /* Mesure first duration to validate the IR frame */
@@ -244,6 +244,12 @@ void IR_EXTI_IRQHandler(void)
     EXTI_ClearITPendingBit(IR_EXTI_LINE);
 	}
 
+//	if(EXTI_GetITStatus(EXTI_Line0) != RESET)
+//	{
+//		bRadio_Check_Tx_RX();
+//    /* Clear the IR EXTI line pending bit */
+//    EXTI_ClearITPendingBit(EXTI_Line0);
+//	}
 }
 
 static void IR_NVIC_Configuration(void)
@@ -296,6 +302,9 @@ void Init_IRReceiver(void)
   GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
   GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;;
   GPIO_Init(IR_GPIO_PORT, &GPIO_InitStructure);
+  /* Enable SYSCFG clock */
+  RCC_APB2PeriphClockCmd(RCC_APB2Periph_SYSCFG, ENABLE);
+	SYSCFG_EXTILineConfig(IR_EXTI_PORT_SOURCE,IR_EXTI_PIN_SOURCE);
 
   /* Configure the GPIO port for IR reception */
 //  IR_GPIO_Configuration();

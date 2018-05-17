@@ -15,6 +15,7 @@
 
 #define GREENLED_PIN     GPIO_Pin_0
 #define REDLED_PIN     	 GPIO_Pin_1
+#define DOUBLELED_PIN   (GPIO_Pin_1|GPIO_Pin_0)
 
 #define LED_TWINKLE_GREEN			GPIOC->ODR ^= GREENLED_PIN
 #define LED_OFF_GREEN					GPIOC->ODR &= ~GREENLED_PIN
@@ -24,6 +25,10 @@
 #define LED_OFF_RED						GPIOC->ODR &= ~REDLED_PIN
 #define LED_ON_RED						GPIOC->ODR |= REDLED_PIN
 
+#define LED_TWINKLE_DOUBLE			GPIOC->ODR ^= DOUBLELED_PIN
+#define LED_OFF_DOUBLE					GPIOC->ODR &= ~DOUBLELED_PIN
+#define LED_ON_DOUBLE						GPIOC->ODR |= DOUBLELED_PIN
+
 #define BREATHLIGHT_TIM		   				TIM15
 #define BREATHLIGHT_TIM_CLOCK		   	RCC_APB2Periph_TIM15
 #define BREATHLIGHT_TIM_IRQ  				TIM15_IRQn
@@ -31,7 +36,7 @@
 
 static LedModeTypedef LedGreen=TURN_OFF;
 static LedModeTypedef LedRed=TURN_OFF;
-static LedModeTypedef LedSet=TURN_OFF;
+static LedModeTypedef LedSet=TURN_OFF;  //当前模式
 //static LedModeTypedef LedSet=TURN_OFF;
 
 static byte FreqLedPulse10us=0;
@@ -43,8 +48,13 @@ static byte LightOnLedFlag=0;
 
 static void LedModeSet(LedTypedef led,LedModeTypedef mode) 
 {
-	if(led ==LED_GREEN)
+	if(led==LED_GREEN)
 	{
+		if(LedRed!=BREATH_ON)
+		{
+				TIM_Cmd(BREATHLIGHT_TIM, DISABLE); 
+				TIM_ITConfig(BREATHLIGHT_TIM, TIM_IT_Update, DISABLE);
+		}
 		switch(mode)
 		{
 			case TEMP_TWINKLE:
@@ -52,48 +62,44 @@ static void LedModeSet(LedTypedef led,LedModeTypedef mode)
 				{
 					LedSet = LedGreen;
 					LedGreen = TEMP_TWINKLE;
-					TIM_Cmd(BREATHLIGHT_TIM, DISABLE);  //light sleepled
-					TIM_ITConfig(BREATHLIGHT_TIM, TIM_IT_Update, DISABLE);
 				}
 				break;
 			case LED_TWINKLE:
 				LedGreen = LED_TWINKLE;
-				TIM_Cmd(BREATHLIGHT_TIM, DISABLE);  //light sleepled
-				TIM_ITConfig(BREATHLIGHT_TIM, TIM_IT_Update, DISABLE);
 				break;
 			case TURN_ON:
 				LedGreen = TURN_ON;
 				LED_ON_GREEN;
-				TIM_Cmd(BREATHLIGHT_TIM, DISABLE);  //light sleepled
-				TIM_ITConfig(BREATHLIGHT_TIM, TIM_IT_Update, DISABLE);
 				break;
 			case TURN_OFF:
 				LedGreen = TURN_OFF;
 				LED_OFF_GREEN;
-				TIM_Cmd(BREATHLIGHT_TIM, DISABLE);  //light sleepled
-				TIM_ITConfig(BREATHLIGHT_TIM, TIM_IT_Update, DISABLE);
 				break;
 			case BREATH_ON:
 				LedGreen = BREATH_ON;
-				FreqLedPulse10us=99;
-				LightLedFreezeTimes=0;
-				LightLedWidth=100;
-				LightOnLedFlag=0;
-				TIM_Cmd(BREATHLIGHT_TIM, ENABLE);  //breathing light 
-				TIM_ITConfig(BREATHLIGHT_TIM, TIM_IT_Update, ENABLE);
+			  if(LedRed!=BREATH_ON)
+				{
+					FreqLedPulse10us=99;
+					LightLedFreezeTimes=0;
+					LightLedWidth=100;
+					LightOnLedFlag=0;
+					TIM_Cmd(BREATHLIGHT_TIM, ENABLE);  //breathing light 
+					TIM_ITConfig(BREATHLIGHT_TIM, TIM_IT_Update, ENABLE);
+					
+				}
 				break;
 			default:
 				LedGreen = TURN_OFF;
-				TIM_Cmd(BREATHLIGHT_TIM, DISABLE);  //light sleepled
-				TIM_ITConfig(BREATHLIGHT_TIM, TIM_IT_Update, DISABLE);
 				break;
 		}
-			
 	}
-	else if(led ==LED_RED)
+	else if(led==LED_RED)
 	{
-		TIM_Cmd(BREATHLIGHT_TIM, DISABLE); 
-		TIM_ITConfig(BREATHLIGHT_TIM, TIM_IT_Update, DISABLE);
+		if(LedGreen!=BREATH_ON)
+		{
+				TIM_Cmd(BREATHLIGHT_TIM, DISABLE); 
+				TIM_ITConfig(BREATHLIGHT_TIM, TIM_IT_Update, DISABLE);
+		}
 		switch(mode)
 		{
 			case TEMP_TWINKLE:
@@ -115,31 +121,27 @@ static void LedModeSet(LedTypedef led,LedModeTypedef mode)
 				LED_OFF_RED;
 				break;
 			case BREATH_ON:
-//				LedRed = BREATH_ON;
-//				TIM_Cmd(TIM6, ENABLE);  //breathing light 
-//				TIM_ITConfig(TIM6, TIM_IT_Update, ENABLE);
+				LedRed = BREATH_ON;
+  			if(LedGreen!=BREATH_ON)
+				{
+					FreqLedPulse10us=99;
+					LightLedFreezeTimes=0;
+					LightLedWidth=100;
+					LightOnLedFlag=0;
+					TIM_Cmd(BREATHLIGHT_TIM, ENABLE);  //breathing light 
+					TIM_ITConfig(BREATHLIGHT_TIM, TIM_IT_Update, ENABLE);					
+				}
+
 				break;
 			default:
 				LedRed = TURN_OFF;
 				LED_OFF_RED;
 				break;
 		}
-			
 	}
-	else
-	{
-		if(mode == TURN_ON)
-		{
-			LED_ON_RED;
-			LED_ON_GREEN;
-		}
-		else
-		{
-			LED_OFF_RED;
-			LED_OFF_GREEN;
-		}
-			
-	}
+	
+
+
 }
 
 
@@ -224,11 +226,17 @@ void TIM15_IRQHandler(void) //10us
 		}
 		if(FreqLedPulse10us==0)
 		{
-			LED_OFF_GREEN;
+			if(LedRed==BREATH_ON) 
+				LED_OFF_RED;
+			if(LedGreen==BREATH_ON) 
+				LED_OFF_GREEN;
 		}
 		else if(FreqLedPulse10us== LightLedWidth)
 		{
-			LED_ON_GREEN;
+			if(LedRed==BREATH_ON) 
+				LED_ON_RED;
+			if(LedGreen==BREATH_ON) 
+				LED_ON_GREEN;
 		}
 	}
 }

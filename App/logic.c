@@ -18,7 +18,25 @@
 
 #define SHUTDOWNTIMER100MS		36000
 
-#ifdef __EXCHANGE_FLOWS
+#define CO2INSIDE_GREEN_LINE    ((ushort)1001)
+#define CO2INSIDE_ORANGE_LINE   ((ushort)1501)
+#define CO2INSIDE_RED_LINE    	((ushort)2001)
+
+#define PMINSIDE_GREEN_LINE    ((ushort)51)
+#define PMINSIDE_ORANGE_LINE   ((ushort)101)
+#define PMINSIDE_RED_LINE    	 ((ushort)151)
+
+#define CO2INSIDE_GREEN    	((byte)0x01)
+#define CO2INSIDE_ORANGE    ((byte)0x02)
+#define CO2INSIDE_RED    		((byte)0x04)
+#define PMINSIDE_GREEN    	((byte)0x08)
+#define PMINSIDE_ORANGE    	((byte)0x10)
+#define PMINSIDE_RED    		((byte)0x20)
+
+#define IAQFLAG_GREEN			(CO2INSIDE_GREEN|PMINSIDE_GREEN)
+#define IAQFLAG_ORANGE		(CO2INSIDE_ORANGE|PMINSIDE_ORANGE)
+#define IAQFLAG_RED				(CO2INSIDE_RED|PMINSIDE_RED)
+
 typedef struct{
 	uint16_t		Moto1PwmPace;
 	uint16_t  	Moto1RpmPace;
@@ -26,7 +44,9 @@ typedef struct{
 	uint16_t  	Moto2RpmPace;
 }SysIndex_TypeDef;
 SysIndex_TypeDef SysIndex={PWM_MOTO1_OUT_STEP,RPM_MOTO1_OUT_STEP,0,0};
-uint16_t MotoPFStopPwm = PWM_MOTO2_STOP;
+
+#ifdef __DOUBLE_MOTOS
+	uint16_t MotoPFStopPwm = PWM_MOTO2_STOP;
 #endif
 
 byte SeqOperDelay= 0; 
@@ -35,6 +55,9 @@ static ushort UseTimer10s=0;
 static byte OperTimer1s=SCREEN_WAITLIGHT_1S;
 //static byte LogicDelayMs=10;
 static byte StoreDelay=0;
+
+static byte IAQFlag=0;
+static byte IAQFlagNew=0;
 
 #ifdef __EXCHANGE_FLOWS
 void SetVentiMoto2Act(void)
@@ -122,86 +145,7 @@ void GetMotoPFOcupy(uint8_t airflow)
 #endif		
 
 
-//#ifdef __SELF_ADJUSTMOTO
-//void MotoXFJudgebyRPM(void)
-//{
-//	if(App.SysRunStatus.XFmotoPWM>PWM_DUTYOCCUPY_MOTO1MIN)
-//	{
-//		if(App.SysRunStatus.XFmotoRPM<RPM_MOTO1_BOTTOM)
-//		{
-//			App.SysFault.MotoXF++;
-//			App.SysCtrlStatus.XFmotoPWM += 50;
-//			if(App.SysCtrlStatus.XFmotoPWM >(PWM_DUTYOCCUPY_MOTO1MIN+PWM_DUTYOCCUPY_MOTO1ACT))
-//			{
-//				App.SysCtrlStatus.XFmotoPWM =(PWM_DUTYOCCUPY_MOTO1MIN+PWM_DUTYOCCUPY_MOTO1ACT);
-//				if(App.SysFault.MotoXF>10)  //plus 10%
-//				{
-//					App.SysFault.MotoXF=10;
-//					App.SysState.FaultFlag |= XFMOTO_FAULT;
-//					App.SysState.FaultFlag &= ~FAULTICON_DISP;				
-//				}	
-//			}				
-//		}
-//		else
-//		{
-//			App.SysFault.MotoXF = 0;
-//			App.SysState.FaultFlag &= ~XFMOTO_FAULT;				
-//			if(App.SysRunStatus.XFmotoRPM>(RPM_MOTO1_TOP))
-//			{
-//				SysIndex.Moto1Index++;
-//				if(App.SysCtrlStatus.XFmotoPWM>50)
-//					App.SysCtrlStatus.XFmotoPWM -= 20;
-//			}
-//			else if((SysIndex.Moto1Index)&&(App.SysRunStatus.XFmotoRPM<(RPM_MOTO1_TOP-100)))
-//			{
-//				SysIndex.Moto1Index--;
-//				if(App.SysCtrlStatus.XFmotoPWM<9980)
-//				App.SysCtrlStatus.XFmotoPWM += 20;
-//			}
-//		}
-//	}
-//}
 
-//void MotoPFJudgebyRPM(void)
-//{
-//	if(App.SysRunStatus.PFmotoPWM>PWM_DUTYOCCUPY_MOTO2MIN)
-//	{
-//		if(App.SysRunStatus.PFmotoRPM<RPM_MOTO2_BOTTOM)
-//		{
-//			App.SysFault.MotoPF++;
-//			App.SysCtrlStatus.PFmotoPWM += 50;
-//			if(App.SysCtrlStatus.PFmotoPWM >(PWM_DUTYOCCUPY_MOTO2MIN+PWM_DUTYOCCUPY_MOTO2ACT))
-//			{
-//				App.SysCtrlStatus.PFmotoPWM =(PWM_DUTYOCCUPY_MOTO2MIN+PWM_DUTYOCCUPY_MOTO2ACT);
-//				if(App.SysFault.MotoPF>10)  //plus 10%
-//				{
-//					App.SysFault.MotoPF=10;
-//					App.SysState.FaultFlag |= PFMOTO_FAULT;
-//					App.SysState.FaultFlag &= ~FAULTICON_DISP;				
-//				}	
-//			}				
-//		}
-//		else
-//		{
-//			App.SysFault.MotoPF = 0;
-//			App.SysState.FaultFlag &= ~PFMOTO_FAULT;				
-//			if(App.SysRunStatus.PFmotoRPM>(RPM_MOTO2_TOP))
-//			{
-//				SysIndex.Moto2Index++;
-//				if(App.SysCtrlStatus.PFmotoPWM>50)
-//					App.SysCtrlStatus.PFmotoPWM -= 20;
-//			}
-//			else if((SysIndex.Moto2Index)&&(App.SysRunStatus.PFmotoRPM<(RPM_MOTO2_TOP-100)))
-//			{
-//				SysIndex.Moto2Index--;
-//				if(App.SysCtrlStatus.PFmotoPWM<9980)
-//				App.SysCtrlStatus.PFmotoPWM += 20;
-//			}
-//		}
-//	}
-//}
-
-//#endif
 
 /*******************************************************************************
 * 描述	    : 根据传感器数据判定运行模式
@@ -255,7 +199,14 @@ void ParseEchoData(byte data)
 						PostMessage(MessageParaUpdate, PARA_CIRCLEMODE);
 					}
 				}
-			}	
+			}
+			IAQFlagNew &= ~(CO2INSIDE_GREEN|CO2INSIDE_ORANGE|CO2INSIDE_RED);
+      if(App.SensorData.CO2Inside<CO2INSIDE_GREEN_LINE)
+        IAQFlagNew |= CO2INSIDE_GREEN;
+      else if(App.SensorData.CO2Inside<CO2INSIDE_ORANGE_LINE)			
+        IAQFlagNew |= CO2INSIDE_ORANGE;
+			else
+        IAQFlagNew |= CO2INSIDE_RED;
 			break;
 		case COMM_IAQ_READ:
 			if(App.SysCtrlPara.CircleModeSet==CIRCLEMODE_AUTO)
@@ -277,6 +228,13 @@ void ParseEchoData(byte data)
 					PostMessage(MessageParaUpdate, PARA_XFMOTODUTY);
 				}
 			}	
+			IAQFlagNew &= ~(PMINSIDE_GREEN|PMINSIDE_ORANGE|PMINSIDE_RED);
+      if(App.SensorData.PMInside<PMINSIDE_GREEN_LINE)
+        IAQFlagNew |= PMINSIDE_GREEN;
+      else if(App.SensorData.PMInside<PMINSIDE_ORANGE_LINE)			
+        IAQFlagNew |= PMINSIDE_ORANGE;
+			else
+        IAQFlagNew |= PMINSIDE_RED;
 			break;
 		case COMM_HEATERSET:
 			if(App.SysCtrlStatus.AuxiliaryHeatSet!=App.SysRunStatus.AuxiliaryHeat )
@@ -330,7 +288,6 @@ void ParseEchoData(byte data)
 				}
 				else
 				{
-//					PostMessage(MessageCommTrans, COMM_POWER_SET);
 					App.SysFault.PowerBaseFault++;
 					if(App.SysFault.PowerBaseFault>20)
 						App.SysState.FaultFlag  |= POWERBASE_FAULT;
@@ -345,13 +302,10 @@ void ParseEchoData(byte data)
 				}
 				else
 				{
-//					PostMessage(MessageCommTrans, COMM_POWER_SET);
 					App.SysFault.PowerBaseFault++;
 					if(App.SysFault.PowerBaseFault>20)
 						App.SysState.FaultFlag  |= POWERBASE_FAULT;
 				}
-				App.SensorData.PMInside =App.SysVersion.CtrlMainVersion*100+App.SysVersion.CtrlSubVersion;
-				App.SensorData.CO2Inside= App.SysVersion.PowerMainVersion*100+App.SysVersion.PowerSubVersion;
 			}
 			break;
 		default:
@@ -377,7 +331,7 @@ void Function_Run(void)
 		case 1:
 		  if(App.SysCtrlStatus.Power != App.SysRunStatus.Power )
 			{
-				seconds=0;
+//				seconds=0;
 				PostMessage(MessageCommTrans, COMM_POWER_SET);
 			}
 			else
@@ -413,12 +367,20 @@ void Function_Run(void)
 			PostMessage(MessageCommTrans, COMM_XFMOTODUTY);
 		break;
 		case 8:
+		if(App.SysCtrlPara.Power == POWER_SLEEP)
+			App.SensorData.RHInside = (uint8_t)System.Device.RhT.ReadRhTSensor(HIMIDITY_READ);
 #ifdef __DOUBLE_MOTOS
 			PostMessage(MessageCommTrans, COMM_PFMOTODUTY);
 #endif
 		break;
 		case 9:
-			PostMessage(MessageCommTrans, COMM_CO2_READ);
+//			PostMessage(MessageCommTrans, COMM_CO2_READ);
+		if(App.SysCtrlPara.Power == POWER_SLEEP)
+		{
+			App.SensorData.TempInside = (int8_t)System.Device.RhT.ReadRhTSensor(TEMPER_READ);
+			PostMessage(MessageProcess, IAQFLAG_DISP);
+		}
+		
 			break;
 		case 10:
 			seconds=0;
@@ -461,7 +423,8 @@ static void AppSystick10(void)
 				if(!OperTimer1s)
 				{
 					LCD_BL_OFF;
-					System.Device.Led.LedModeSet(LED_GREEN,BREATH_ON);
+					IAQFlag=0;
+					PostMessage(MessageProcess, IAQFLAG_DISP);
 					App.SysCtrlPara.Power = POWER_SLEEP;
 				}
 				
@@ -474,7 +437,8 @@ static void AppSystick10(void)
 		if(!SeqOperDelay)
 		{
 			PostMessage(MessageParaUpdate, PARA_XFMOTODUTY);
-			CommTalk_Trans(COMM_BEEPONE);
+			System.Device.Beep.BeepOn(BEEP_SHORT);
+//			CommTalk_Trans(COMM_BEEPONE);
 		}
 	}
 	
@@ -483,11 +447,13 @@ static void SysPowerOff(void)
 {
 	App.SysCtrlPara.Power = POWER_OFF;
 	App.SysCtrlStatus.Power = POWER_OFF;	
-	App.SysCtrlPara.AirFlowRun = CTRLFLOW_STEP;
+//	App.SysCtrlPara.AirFlowRun = CTRLFLOW_STEP;
 	App.SysCtrlPara.AuxiliaryHeatSet = HEATER_OFF;
 	App.SysCtrlPara.ChildLock =CHILD_UNLOCK;
 	App.SysCtrlPara.ShutTimer =0;
 	System.Device.Timer.Stop(TIMER1);
+	App.Menu.MainForm.LoadFresh = FocusOn_START;
+	App.Menu.FocusFormPointer= &App.Menu.MainForm;
 	LCD_BL_OFF;
 	System.Device.Led.LedModeSet(LED_RED,TURN_ON);
 	System.Device.Led.LedModeSet(LED_GREEN,TURN_OFF);
@@ -515,10 +481,16 @@ static void SysPowerOn(void)
    App.SysCtrlPara.ShutTimer=0;		
 	System.Device.Led.LedModeSet(LED_GREEN,TURN_OFF);
 	System.Device.Led.LedModeSet(LED_RED,TURN_OFF);
+	
+#ifdef __EXCHANGE_FLOWS
 	SetVentiMoto2Act();
+#endif
 //	InitHmi();
 //	START MOTOS AND CHECK CIRCLEMODE
 //	WifiCtrlCode(ModuleQuery);
+	App.SensorData.RHInside = (uint8_t)System.Device.RhT.ReadRhTSensor(HIMIDITY_READ);
+	App.SensorData.TempInside = (int8_t)System.Device.RhT.ReadRhTSensor(TEMPER_READ);
+	
 	LCD_BL_ON;
 }
 
@@ -589,6 +561,7 @@ void CtrlParaUpdate(ParaOperTypedef data)
 			{
 					LCD_BL_OFF;
 					System.Device.Led.LedModeSet(LED_GREEN,TURN_OFF);
+					System.Device.Led.LedModeSet(LED_RED,TURN_OFF);
 					App.SysCtrlPara.AirFlowRun = CTRLFLOW_STEP_MUTE;
 					App.SysCtrlPara.Power = POWER_SLEEP;
 				OperTimer1s=0;
@@ -655,8 +628,6 @@ void CtrlParaUpdate(ParaOperTypedef data)
 			else
 			{
 				SysPowerOff();
-				App.SensorData.PMInside =App.SysVersion.CtrlMainVersion*100+App.SysVersion.CtrlSubVersion;
-				App.SensorData.CO2Inside= App.SysVersion.PowerMainVersion*100+App.SysVersion.PowerSubVersion;
 			}
 			PostMessage(MessageCommTrans, COMM_POWER_SET);
 			StorePost(STORE_SYSPARA);
@@ -813,6 +784,27 @@ void ProcessParse(ProcessTypedef ProcessMessage)
 			OperTimer1s = 0;
 			break;
 		
+		case IAQFLAG_DISP:
+			if((IAQFlagNew != IAQFlag)&&(App.SysCtrlPara.MuteSet == MUTEMODE_OFF))
+			{
+				IAQFlag = IAQFlagNew;
+				if(IAQFlag&IAQFLAG_RED)
+				{
+					System.Device.Led.LedModeSet(LED_GREEN,TURN_OFF);
+					System.Device.Led.LedModeSet(LED_RED,BREATH_ON);
+				}
+				else if(IAQFlag&IAQFLAG_ORANGE)
+				{
+					System.Device.Led.LedModeSet(LED_RED,BREATH_ON);
+					System.Device.Led.LedModeSet(LED_GREEN,BREATH_ON);
+				}
+				else
+				{
+					System.Device.Led.LedModeSet(LED_RED,TURN_OFF);
+					System.Device.Led.LedModeSet(LED_GREEN,BREATH_ON);
+				}
+			}
+			break;
 	}
 }
 
@@ -821,6 +813,9 @@ static void InitLogic(void)
   System.Device.Systick.Register(Systick10, AppSystick10);
 #ifdef __WIFI_VALIDE
 	AppWifiInit();
+#endif
+#ifdef __RF_VALIDE
+	UnitRFInit();
 #endif
 }
 
@@ -832,8 +827,7 @@ void LogicTask(void)
 
 
     
-//  MenuTask();
-//  System.OS.DelayMs(100);
+	//  System.OS.DelayMs(100);
 //	SysPowerOn();
 
 	PostMessage(MessageCommTrans, COMM_VERSION);
@@ -849,7 +843,7 @@ void LogicTask(void)
         switch(GetMessageType(message))
         {
             case MessageKey:                    //按键消息
-                KeyProcess((KeyActEnum)data);
+               App.Menu.FocusFormPointer->KeyProcess((KeyActEnum)data);
 							OperTimer1s=SCREEN_WAITLIGHT_1S;
                 break;
             case MessageCommRecv:
@@ -891,6 +885,12 @@ void LogicTask(void)
             case MessageWifiCtrl:
                 WifiCtrlCode(data);
                 break;
+            case MessageRfRecv:
+                RfRecvParse(data);
+                break;
+            case MessageRfCtrl:
+                RfCtrlParse(data);
+                break;
             default:
 							if(App.SysCtrlPara.Power>POWER_ON)
 							{
@@ -898,7 +898,7 @@ void LogicTask(void)
 								if(StoreDelay>100)
 								{
 									StoreDelay=0;
-//									StorePara();
+									StorePara();
 								}
 							}
 							else
@@ -910,6 +910,6 @@ void LogicTask(void)
 //					System.Device.Iwdog.IwdogReload();
 
 				MenuTask();
-				System.OS.DelayMs(25);   //20161118
+				System.OS.DelayMs(25);   
     }
 }

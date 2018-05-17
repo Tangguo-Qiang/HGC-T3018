@@ -12,6 +12,7 @@
 
 
 #include "system.h"
+extern void BeepSystick100Routine(void);
 
 extern void KeySystick100Routine(void);
 
@@ -30,7 +31,7 @@ extern void Usart2RecvSystick1000Routine(void);
 extern void SysTick_Handler(void);
 
 //#define Systicks 10000     // 每秒种产生中断的次数，也就是节拍数
-#define Systicks (1000)     // 每秒种产生中断的次数，也就是节拍数
+#define Systicks 	(1000)     // 每秒种产生中断的次数，也就是节拍数
 
 #define Systick10000Sum 2
 #define Systick1000Sum  2
@@ -56,6 +57,7 @@ static function Systick10RegisterPointerBlock[Systick100Sum] =
 {
     Dummy, Dummy, Dummy, Dummy,  
 };
+
 
 /*******************************************************************************
 * 描述	    : 系统节拍注册函数，用于注册回调函数到不同速度的系统节拍数组中。
@@ -121,7 +123,7 @@ void SysTick_Handler(void)
         case 3: Systick100RegisterPointerBlock[3](); break;
         case 4: GuiTimer10ms=1;      break;
         case 5: KeySystick100Routine();        break;
-        case 6:           break;
+        case 6: BeepSystick100Routine();          break;
         case 7:         break;
         case 8: 								break;
         case 9:
@@ -138,6 +140,8 @@ void SysTick_Handler(void)
             }
             break;
     }
+		
+
 }
 
 void InitSystick(void)

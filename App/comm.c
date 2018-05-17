@@ -127,20 +127,20 @@ Bool CommTalk_Echo(byte length)
 								PostMessage(MessageEchoDate, COMM_PFMOTODUTY);
 							break;
 							case CODE_TEMPER_RH:
-								val = *((int8_t *)&CommRxBuffer[FRAME_DATABEGIN]);
-							  if((val>(-30))&&(val<(40)))
-								{
-									App.SysFault.TempInSensors=0;
-									App.SysState.FaultFlag &= ~SENSORINTEMP_FAULT;
-								}
-								else
-								{
-									val = -40;
-									App.SysFault.TempInSensors++;
-									if(App.SysFault.TempInSensors>10)
-										App.SysState.FaultFlag |= SENSORINTEMP_FAULT;
-								}
-								App.SensorData.TempInside  = val;
+//								val = *((int8_t *)&CommRxBuffer[FRAME_DATABEGIN]);
+//							  if((val>(-30))&&(val<(40)))
+//								{
+//									App.SysFault.TempInSensors=0;
+//									App.SysState.FaultFlag &= ~SENSORINTEMP_FAULT;
+//								}
+//								else
+//								{
+//									val = -40;
+//									App.SysFault.TempInSensors++;
+//									if(App.SysFault.TempInSensors>10)
+//										App.SysState.FaultFlag |= SENSORINTEMP_FAULT;
+//								}
+//								App.SensorData.TempInside  = val;
 								
 								val = *((int8_t *)&CommRxBuffer[FRAME_DATABEGIN+1]);
 							  if((val>(-30))&&(val<(40)))
@@ -157,22 +157,22 @@ Bool CommTalk_Echo(byte length)
 								}
 								App.SensorData.TempOutside = val;
 								
-								val = CommRxBuffer[FRAME_DATABEGIN+2];
-								if(val>99)
-								{
-									val = 99;
-									App.SysFault.RHSensor++;
-									if(App.SysFault.RHSensor>10)
-										App.SysState.FaultFlag |= SENSORRH_FAULT;
-								}
-								else
-								{
-									App.SysFault.RHSensor=0;
-									App.SysState.FaultFlag &= ~SENSORRH_FAULT;
-								}
-								App.SensorData.RHInside = val;
-								
-								PostMessage(MessageEchoDate, COMM_TEMPER_RH);
+//								val = CommRxBuffer[FRAME_DATABEGIN+2];
+//								if(val>99)
+//								{
+//									val = 99;
+//									App.SysFault.RHSensor++;
+//									if(App.SysFault.RHSensor>10)
+//										App.SysState.FaultFlag |= SENSORRH_FAULT;
+//								}
+//								else
+//								{
+//									App.SysFault.RHSensor=0;
+//									App.SysState.FaultFlag &= ~SENSORRH_FAULT;
+//								}
+//								App.SensorData.RHInside = val;
+//								
+//								PostMessage(MessageEchoDate, COMM_TEMPER_RH);
 								
 								break;
 							case CODE_CIRCLEMODE:
@@ -231,15 +231,17 @@ Bool CommTalk_Echo(byte length)
 								App.SysRunStatus.Power=  (PowerSetTypedef)CommRxBuffer[FRAME_AIDORDER];
 							  if(CommRxBuffer[FRAME_DATABEGIN])
 								{
-									App.SysVersion.PowerMainVersion=CommRxBuffer[FRAME_DATABEGIN];
-									App.SysVersion.PowerSubVersion=CommRxBuffer[FRAME_DATABEGIN+1];
+									App.SysVersion.PowerVersion=CommRxBuffer[FRAME_DATABEGIN];
+									App.SysVersion.PowerVersion <<= 8;
+									App.SysVersion.PowerVersion |= CommRxBuffer[FRAME_DATABEGIN+1];
 								}
 								PostMessage(MessageEchoDate, COMM_POWER_SET);
 								break;
 							case CODE_VERSION:
 								App.SysRunStatus.Power=  (PowerSetTypedef)CommRxBuffer[FRAME_AIDORDER];
-							  App.SysVersion.PowerMainVersion=CommRxBuffer[FRAME_DATABEGIN];
-							  App.SysVersion.PowerSubVersion=CommRxBuffer[FRAME_DATABEGIN+1];
+								App.SysVersion.PowerVersion=CommRxBuffer[FRAME_DATABEGIN];
+								App.SysVersion.PowerVersion <<= 8;
+								App.SysVersion.PowerVersion |= CommRxBuffer[FRAME_DATABEGIN+1];
 								
 								break;
 

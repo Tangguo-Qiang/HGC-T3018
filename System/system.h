@@ -13,7 +13,7 @@
 
 //#include <string.h>
 #include <stdio.h>
-//#include <stdlib.h>
+#include <stdlib.h>
 //#include <stdarg.h>
 
 #include "sysdefs.h"
@@ -111,6 +111,9 @@ typedef enum
     MessageWifiCtrl      = 0x09,
     MessageWifiUpload      = 0x0A,
     MessageProcess      = 0x0B,
+	
+    MessageRfCtrl      = 0x0C,
+    MessageRfRecv      = 0x0D,
     MessageTimer   
     /*«ÎÃÓ≥‰¿‡–Õ*/
 }MessageEnum;
@@ -158,9 +161,30 @@ typedef enum{
 	FILTER_CLEAR = (uint)0x2000,
 	FILTER_CHECK = (uint)0x3000,
 	FILTER_POWERON = (uint)0x4000,
-	FAULTINFO_DISP = (uint)0x5000
+	FAULTINFO_DISP = (uint)0x5000,
+	IAQFLAG_DISP = (uint)0x6000
 }ProcessTypedef;
 
+typedef enum{
+	FIRSTFILTER_CHECK = (uint)0x01,
+	MIDFILTER_CHECK = (uint)0x02,
+	ESPFILTER_CHECK = (uint)0x04,
+	HPFILTER_CHECK = (uint)0x08,
+	POWERBASE_FAULT = (uint)0x10,
+	SENSOROUTTEMP_FAULT = (uint)0x20,
+	SENSORINTEMP_FAULT = (uint)0x40,
+	SENSORRH_FAULT = (uint)0x80,
+	SENSORCO2_FAULT = (uint)0x100,
+	SENSORPM_FAULT = (uint)0x200,
+	XFMOTO_FAULT = (uint)0x400,
+	PFMOTO_FAULT = (uint)0x800,
+	CO2INSIDEBEYOND=(uint)0x1000,
+	PMINSIDEBEYONG=(uint)0x2000,
+	HGA_FAULT = (uint)0x4000,
+	STORE_FAULT=(uint)0x8000,
+
+	FAULTICON_DISP = (uint)0x10000
+}FaultTypedef;
 
 typedef enum{
 	TIMER1 = (uint)0x01,
@@ -168,6 +192,22 @@ typedef enum{
 	TIMER3 = (uint)0x04,
 	TIMER4 = (uint)0x08
 }TimerIDTypedef;
+
+typedef enum{
+	BEEP_POWERON = (uint)0x01,
+	BEEP_POWEROFF = (uint)0x02,
+	BEEP_SHORT = (uint)0x03,
+	BEEP_LONG = (uint)0x04,
+	BEEP_3SHORT = (uint)0x05,
+	BEEP_2SHORT = (uint)0x06
+}BeepTypedef;
+
+typedef enum{
+	HIMIDITY_READ = (byte)0xF5,
+	TEMPER_READ = (byte)0xF3,
+}RHTReadTypedef;
+
+#define RADIO_MAX_PACKET_LENGTH     50u
 
 #include "device.h"  
 #include "logicctrl.h"
@@ -237,6 +277,10 @@ typedef struct
             void(*KeyLedSet)(byte OnSeconds);
         }Key;
 
+        struct Beep
+        {
+            void(*BeepOn)(BeepTypedef val);
+        }Beep;
         
         struct Usart2
         {
@@ -250,7 +294,7 @@ typedef struct
         				
         struct Lcd
         {
-            TestStatus (*ScreenClear)(void);
+            void (*ScreenClear)(void);
             void (*DispUnit)(LCD_DispTypeDef Icon);
             void (*NonDispUnit)(LCD_DispTypeDef Icon);
         }Lcd;
@@ -280,17 +324,33 @@ typedef struct
 					void (*HekrModuleControl)(byte data);
 					void (*HekrValidDataUpload)(byte len);
         }Wifi;
+        
+        struct RhT
+        {
+            int32_t (*ReadRhTSensor)(RHTReadTypedef whatdo);
+        }RhT;
+				
+        struct RF
+        {
+					void (*RfInit)(uint8_t *pCustomPacked);
+          void (*RfStartRX)(uint8_t channel, uint8_t packetLenght );
+					void (*RfStartTX)(uint8_t channel, uint8_t *pioRadioPacket, uint8_t length);
+					uint8_t (*RfCheck)(void)
+;
+        }RF;
 
 
     }Device;
 		
 		struct Gui
     {
-			void (*ParseForm)(void);
-			void (*LoadForm)(FormDispTypeDef* FormDisp);
-			void (*InitDispSensorData)(SensorDataTypedef* SensorData);
-			void (*InitDispSysCtrlPara)(SysCtrlParaTypedef* SysCtrlPara);
-			void (*InitDispSysStatus)(SysStateTypedef* SysStatus);
+			void (*ParseForm)(FormTypeDef * formPointer);
+			void (*AddDispObj)(FormTypeDef * formPointer, DispObjType *objPointer);
+			void (*LoadForm)(FormTypeDef * formPointer);
+//			void (*LoadForm)(FormDispTypeDef* FormDisp);
+//			void (*InitDispSensorData)(SensorDataTypedef* SensorData);
+//			void (*InitDispSysCtrlPara)(SysCtrlParaTypedef* SysCtrlPara);
+//			void (*InitDispSysStatus)(SysStateTypedef* SysStatus);
     }Gui;
 
     struct OS

@@ -12,19 +12,17 @@
 #define WDTDIS	0x0A
 #define WDTED		0x0E
 
-#define LCD_SDA_H      GPIOC->BSRR = GPIO_Pin_12  //PbOut(6)=1 
-#define LCD_SDA_L      GPIOC->BRR  = GPIO_Pin_12  //PbOut(6)=0   
-#define LCD_SDA_RD     (GPIOC->IDR  & GPIO_Pin_12)  //PbIn(7)  
+#define DATA_H      GPIOC->BSRR = GPIO_Pin_12  //PbOut(6)=1 
+#define DATA_L      GPIOC->BRR  = GPIO_Pin_12  //PbOut(6)=0   
     
-#define LCD_SCL_H        GPIOC->BSRR = GPIO_Pin_11  //PbOut(7)=1  
-#define LCD_SCL_L        GPIOC->BRR  = GPIO_Pin_11 //PbOut(7)=0   
+#define WR_H        GPIOC->BSRR = GPIO_Pin_11  //PbOut(7)=1  
+#define WR_L        GPIOC->BRR  = GPIO_Pin_11 //PbOut(7)=0   
     
-//#define CS_H        GPIOC->BSRR = GPIO_Pin_10  //PbOut(7)=1  
-//#define CS_L        GPIOC->BRR  = GPIO_Pin_10 //PbOut(7)=0   
+#define CS_H        GPIOC->BSRR = GPIO_Pin_10  //PbOut(7)=1  
+#define CS_L        GPIOC->BRR  = GPIO_Pin_10 //PbOut(7)=0   
 
-#define DELAY_TIMER	50
 
-static byte ComData[20]={0};
+static byte ComData[22]={0};
 
 static void LcdDelay(uint i) 
 { 
@@ -34,127 +32,84 @@ static void LcdDelay(uint i)
    }  
 } 
 
-static TestStatus LCD_StartI2C(void) 
+static void WriteToLcdMSF(byte Data,byte Cnt)
 {
-	LCD_SDA_H; 
-	LCD_SCL_H; 
-	LcdDelay(DELAY_TIMER); 
-	if(!LCD_SDA_RD)
-		return FAILED; //SDA?????????,?? 
-	LCD_SDA_L; 
-	LcdDelay(DELAY_TIMER); 
-	if(LCD_SDA_RD) 
-		return FAILED; //SDA??????????,?? 
-	LCD_SCL_L; 
-	LcdDelay(DELAY_TIMER); 
-	return PASSED; 
-} 
-
-static void LCD_StopI2C(void) 
-{ 
-	LCD_SCL_L; 
-	LcdDelay(DELAY_TIMER); 
-	LCD_SDA_L; 
-	LcdDelay(DELAY_TIMER); 
-	LCD_SCL_H; 
-	LcdDelay(DELAY_TIMER); 
-	LCD_SDA_H; 
-	LcdDelay(DELAY_TIMER); 
-} 
-
-static TestStatus LCD_WaitAckI2C(void)   //???:=1?ACK,=0?ACK 
-{ 
-	LCD_SCL_L; 
-	LcdDelay(DELAY_TIMER); 
-	LCD_SDA_H; 
-	LcdDelay(DELAY_TIMER); 
-	LCD_SCL_H; 
-	LcdDelay(DELAY_TIMER); 
-	if(LCD_SDA_RD) 
-	{	
-		LCD_SCL_L; 
-		return FAILED; 
-	}
-	LCD_SCL_L; 
-	return PASSED; 
-} 
-
-static void LCD_SendByteI2C(uint8_t SendByte) //????????// 
-{
-	uint8_t i=8; 
-
-	while(i--) 
-	{ 
-		LCD_SCL_L; 
-	LcdDelay(DELAY_TIMER); 
-		
-		if(SendByte&0x01) 
-			LCD_SDA_H;
+	byte i;
+	for(i=0;i<Cnt;i++)
+	{
+		WR_L;
+		if(Data&0x80)
+			DATA_H;
 		else
-			LCD_SDA_L;
+			DATA_L;
 		
-		SendByte >>=1; 
-	LcdDelay(DELAY_TIMER); 
-		LCD_SCL_H; 
-	LcdDelay(DELAY_TIMER); 
+		LcdDelay(200);
+		WR_H;
+		Data <<=1;
+		LcdDelay(200);
 	}
-	LCD_SCL_L; 
-} 
+	WR_L;
+	DATA_L;
+}
 
-
-
-static TestStatus WriteCmdInit(void)	//(byte Command)
+static void WriteToLcdLSF(byte Data,byte Cnt)
 {
-	if (!LCD_StartI2C()) 
-		return FAILED; 
-
-	LCD_SendByteI2C(0x27); 
-	if (!LCD_WaitAckI2C()) 
+	byte i;
+	for(i=0;i<Cnt;i++)
 	{
-		LCD_StopI2C(); 
-		return FAILED; 
+		WR_L;
+		if(Data&0x01)
+			DATA_H;
+		else
+			DATA_L;
+		
+		LcdDelay(200);
+		WR_H;
+		Data >>=1;
+		LcdDelay(200);
 	}
+	WR_L;
+	DATA_L;
+}
 
+static void WriteCmd(byte Command)
+{
+	CS_L;
 	LcdDelay(200);
-	return PASSED; 
-}
-
-static TestStatus WriteByte(byte Addr,byte ComBit)
-{	
-	if (!LCD_StartI2C()) 
-		return FAILED; 
-
-	Addr |= 0xC0;
-	LCD_SendByteI2C(Addr); 
-	if (!LCD_WaitAckI2C()) 
-	{
-		LCD_StopI2C(); 
-		return FAILED; 
-	}
+	WriteToLcdMSF(0x80,4);
+	WriteToLcdMSF(Command,8);
 	
-	LCD_SendByteI2C(ComBit); 
-  LCD_WaitAckI2C(); 
-	LCD_StopI2C(); 
-	return PASSED; 
+	CS_H;
+	LcdDelay(200);
 }
 
-static TestStatus ScreenClear(void)
+static void WriteByte(byte Seg,byte Com)
+{
+	CS_L;
+	LcdDelay(200);
+	WriteToLcdMSF(0xA0,3);
+	Seg <<=2;
+	WriteToLcdMSF(Seg,6);
+	WriteToLcdLSF(Com,4);
+	CS_H;
+	LcdDelay(200);
+}
+
+static void ScreenClear(void)
 {
 	byte i;
 	
-	LCD_SendByteI2C(0xC0); 
-	if (!LCD_WaitAckI2C()) 
+	CS_L;
+	LcdDelay(200);
+	WriteToLcdMSF(0xA0,3);
+	WriteToLcdMSF(0,6);
+	for(i=0;i<22;i++)
 	{
-		LCD_StopI2C(); 
-		return FAILED; 
+		WriteToLcdLSF(0x0,4);
+		ComData[i]=0;
 	}
-	for(i=0;i<20;i++)
-	{
-		LCD_SendByteI2C(0x00); 
-		LCD_WaitAckI2C(); 
-	}
-	LCD_StopI2C(); 
-	return PASSED; 
+	CS_H;
+	LcdDelay(200);
 }
 
 static void DispUnit(LCD_DispTypeDef Icon)
@@ -174,31 +129,35 @@ void Init_Lcd(void)
  	GPIO_InitTypeDef GPIO_InitStructure;
 
   RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOC , ENABLE);
+  RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOA , ENABLE);
 
-  /*Configure GPIO pin : PC10-11 LCD_SCLK,SDA*/
-  GPIO_InitStructure.GPIO_Pin = GPIO_Pin_12|GPIO_Pin_11; 
+  /*Configure GPIO pin : PC10-12 LED*/
+  GPIO_InitStructure.GPIO_Pin = GPIO_Pin_10|GPIO_Pin_11|GPIO_Pin_12; 
   GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
 	GPIO_InitStructure.GPIO_OType = GPIO_OType_OD;
-  GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
+  GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;
   GPIO_InitStructure.GPIO_Speed = GPIO_Speed_10MHz;;
   GPIO_Init(GPIOC, &GPIO_InitStructure);
-  /*Configure GPIO pin : PC9 BK_LIGHT*/
+  /*Configure GPIO pin : PC10-12 LED*/
   GPIO_InitStructure.GPIO_Pin = GPIO_Pin_9; 
   GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
 	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
+//  GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;
   GPIO_InitStructure.GPIO_Speed = GPIO_Speed_10MHz;;
   GPIO_Init(GPIOC, &GPIO_InitStructure);
-  /*Configure GPIO pin : PA8 BK_LIGHT*/
-  GPIO_InitStructure.GPIO_Pin = GPIO_Pin_8; 
-  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
-	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
-  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_10MHz;;
-  GPIO_Init(GPIOA, &GPIO_InitStructure);
+	LCD_BL_OFF;
+	CS_H;
+	WR_H;
+	DATA_H;
 	
-	LCD_BL_ON;
 	LcdDelay(200);
-	WriteCmdInit();
-	LcdDelay(200);
+	WriteCmd(BIAS);
+	WriteCmd(RC);
+	WriteCmd(SYSDIS);
+	WriteCmd(WDTDIS);
+	WriteCmd(SYSEN);
+	WriteCmd(LCDON);
+	LcdDelay(48000);
 	ScreenClear();
 	LCD_BL_OFF;
 	System.Device.Lcd.ScreenClear = ScreenClear;

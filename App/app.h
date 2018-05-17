@@ -9,6 +9,7 @@
 #include "remoteIR.h"
 #include "remoteApp.h"
 #include "logic.h"
+#include "remoteRF.h"
 
 #include "menu.h"
 
@@ -32,6 +33,38 @@
 #endif
 
 
+
+typedef struct 
+{
+  signed char TempInside;                 
+  byte RHInside;
+  signed char TempOutside;
+  ushort CO2Inside;
+  ushort PMInside;
+}SensorDataTypedef;
+
+
+typedef	struct 
+{
+	PowerSetTypedef Power;
+	CircleModeSetTypedef CircleModeSet;
+	TempModeTypedef ThermalModeSet;
+	AuxiliaryHeatTypedef AuxiliaryHeatSet;
+	VentilateRateTypedef VentilateRate;
+	byte  AirFlowSet; 
+	byte  AirFlowRun; 
+	byte ShutTimer;
+	MutSetTypedef MuteSet;
+	ChildLockTypedef ChildLock;
+}SysCtrlParaTypedef; 
+
+typedef struct
+{
+	uint WifiState;
+	uint RFState;
+	uint FaultFlag;
+	uint FilterWarning;
+}SysStateTypedef;
 
 
 /*******************************************************************************
@@ -68,6 +101,7 @@ typedef struct
 		}SysCtrlLine;
 
 		uint UsedHours;
+		uint RfAddrID;
 
 //		RTC_TimeTypeDef SysTime;
 //		AlarmSysTypeDef AlarmSys;
@@ -111,13 +145,16 @@ typedef struct
 
 		struct SysVersion
 		{
-			byte CtrlMainVersion;
-			byte CtrlSubVersion;
-			byte PowerMainVersion;
-			byte PowerSubVersion;
+			ushort CtrlVersion;
+			ushort PowerVersion;
 		}SysVersion;
 		
-    FormDispTypeDef Menu;
+    struct Menu
+    {
+        FormTypeDef MainForm;
+        FormTypeDef FaultForm;
+        FormTypeDef *FocusFormPointer;
+   }Menu;
 		
 		SysStateTypedef SysState;
 		

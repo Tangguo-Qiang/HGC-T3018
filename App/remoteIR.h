@@ -13,9 +13,11 @@
 #define IR_REMOTE_CIRCLEOUT   0xCC
 #define IR_REMOTE_CIRCLEIN    0xBB
 #define IR_REMOTE_CIRCLEAUTO  0xAA
+#define IR_REMOTE_CIRCLEMODE  0xBC
 
 #define IR_REMOTE_TIMERMODE  	0x88
 #define IR_REMOTE_THERMALMODE  0x99
+#define IR_REMOTE_HEATER  0x91
 
 
 void ParseRemoteIR(byte order);

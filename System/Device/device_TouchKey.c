@@ -7,27 +7,19 @@
 #define BTNLED_PIN1 								(GPIO_Pin_14)
 #define BTNLED_PORT2 								GPIOB
 #define BTNLED_PIN2 								(GPIO_Pin_15)
-#define BTNLED_PORT3 								GPIOC
-#define BTNLED_PIN3 								(GPIO_Pin_8)
-#define BTNLED_PORT4 								GPIOC
-#define BTNLED_PIN4 								(GPIO_Pin_6)
-#define BTNLED_PORT5 								GPIOC
-#define BTNLED_PIN5 								(GPIO_Pin_7)
 
-#define LED_ALL_ON		{GPIOB->BSRR = (BTNLED_PIN1|BTNLED_PIN2);GPIOC->BSRR = (BTNLED_PIN3|BTNLED_PIN4|BTNLED_PIN5);};
-#define LED_ALL_OFF		{GPIOB->BRR = (BTNLED_PIN1|BTNLED_PIN2);GPIOC->BRR = (BTNLED_PIN3|BTNLED_PIN4|BTNLED_PIN5);};
+#define LED_ALL_ON		{GPIOB->BSRR = (BTNLED_PIN1|BTNLED_PIN2);}
+#define LED_ALL_OFF		{GPIOB->BRR = (BTNLED_PIN1|BTNLED_PIN2);}
 
 #define BTNTOUCH_PORT 								GPIOB
-#define BTNTOUCH_PINS 								(GPIO_Pin_3|GPIO_Pin_4|GPIO_Pin_5|GPIO_Pin_6|GPIO_Pin_7)
+#define BTNTOUCH_PINS 								(GPIO_Pin_5|GPIO_Pin_6|GPIO_Pin_7)
 	
-#define NOBTN_PRESS   0x1F
+#define NOBTN_PRESS   0x07
 
 
-#define ShortInterval       4		// 短按按键间隔，不得低于30ms
-#define LongInterval        60		// 长按按键间隔
-#define LongStaySet        120		// 长按按键间隔
-#define LongStayInterval    20		// 长按按键间隔
-#define InvalidInterval     4       // 无效识别长度
+#define ShortInterval       3		// 短按按键间隔，不得低于30ms
+#define LongInterval        80		// 长按按键间隔
+#define InvalidInterval     3       // 无效识别长度
 #define DoubleHitInterval   20		// 防连续双击误动间隔
 #define KeyBeepInterval     20      // 按键音长度
 
@@ -49,14 +41,12 @@ static byte RemapKey(byte scan)
 {
     switch(scan)
     {
-        case 0x1E:  return(KeyPower);         
-        case 0x1B:  return(KeyHeater);
-        case 0x1D:  return(KeyMode);       
-        case 0x0F:  return(KeyMinus);   
-        case 0x17:  return(KeyPlus);
-        case 0x0D:  return(KeyModeMinus);
-        case 0x15:  return(KeyModePlus);
-        case 0x07:  return(KeyPlusMinus);
+        case 0x05:  return(KeyPower);         
+        case 0x06:  return(KeyMinus);   
+        case 0x03:  return(KeyPlus);
+        case 0x02:  return(KeyPlusMinus);
+        case 0x04:  return(KeyPowerMinus);   
+        case 0x01:  return(KeyPowerPlus);
         default:    return(NOBTN_PRESS);  
     }
 }
@@ -65,41 +55,24 @@ static byte RemapLongKey(byte scan)
 {
     switch(scan)
     {
-        case 0x1E:  return(KeyLongPower);
-        case 0x0F:  return(KeyLongMinus);
-        case 0x1D:  return(KeyLongMode);
-        case 0x1B:  return(KeyLongHeater);
-        case 0x17:  return(KeyLongPlus);
-        case 0x19:  return(KeyLongModeHeater);
-        case 0x0D:  return(KeyLongModeMinus);
-        case 0x15:  return(KeyLongModePlus);
-        case 0x07:  return(KeyLongPlusMinus);
+        case 0x05:  return(KeyLongPower);
+        case 0x06:  return(KeyLongMinus);
+        case 0x03:  return(KeyLongPlus);
+        case 0x02:  return(KeyLongPlusMinus);
+        case 0x04:  return(KeyLongPowerMinus);   
+        case 0x01:  return(KeyLongPowerPlus);
         default:    return(NOBTN_PRESS);
     }	
 }
 
-static byte RemapStayKey(byte scan) 
-{
-    switch(scan)
-    {
-//        case 0x1E:  return(KeyPower);         
-//        case 0x1B:  return(KeyHeater);
-//        case 0x1D:  return(KeyMode);       
-        case 0x0F:  return(KeyMinus);   
-        case 0x17:  return(KeyPlus);
-//        case 0x0D:  return(KeyModeMinus);
-//        case 0x15:  return(KeyModePlus);
-//        case 0x07:  return(KeyPlusMinus);
-        default:    return(NOBTN_PRESS);  
-    }
-}
+
 static byte ScanPin(void)
 {   
   uint16_t btntouch;
   
 	btntouch = GPIO_ReadInputData(BTNTOUCH_PORT); 
 	btntouch &= (uint16_t)BTNTOUCH_PINS;
-	btntouch >>= 3;
+	btntouch >>= 5;
     
 
     return(btntouch&NOBTN_PRESS);
@@ -160,18 +133,9 @@ void KeySystick100Routine(void)
 				}
         else if (ValidCounter > LongInterval) 
 				{ 
-					if (ValidCounter > LongStaySet)
-					{
-						key = ScanData[0];
-						key = RemapStayKey(key);
-						if(key==NOBTN_PRESS)
-							ValidCounter = LongInterval; 
-						else
-						{
-							ValidCounter = (LongStaySet-LongStayInterval);
-							PostMessage(MessageKey, key); 
-						}
-					}
+						ValidCounter = LongInterval;
+//						key = RemapLongKey(key);
+//						PostMessage(MessageKey, key); 
 				}
     }
     else
@@ -189,7 +153,7 @@ void KeySystick100Routine(void)
             }
 
             if (ValidCounter < ShortInterval) return;
-						if(ValidCounter > (LongStaySet-LongStayInterval-1)) return;
+						if(ValidCounter > LongInterval) return;
 
 //            if (ScanData[0] == ScanData[1])
 //                key = ScanData[0];
@@ -203,7 +167,7 @@ void KeySystick100Routine(void)
 //                return;
 //            }
 
-            if (ValidCounter >= LongInterval) 
+            if (ValidCounter == LongInterval) 
                 key = RemapLongKey(key);
             else if (ValidCounter >= ShortInterval) 
                 key = RemapKey(key);
@@ -260,26 +224,7 @@ void Init_TouchButtons(void)
   GPIO_InitStructure.GPIO_Pin = BTNLED_PIN2;
   GPIO_Init(BTNLED_PORT2, &GPIO_InitStructure);
 	
-  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
-  GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;
-  GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
-  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_10MHz;
-  GPIO_InitStructure.GPIO_Pin = BTNLED_PIN3;
-  GPIO_Init(BTNLED_PORT3, &GPIO_InitStructure);
-	
-  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
-  GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;
-  GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
-  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_10MHz;
-  GPIO_InitStructure.GPIO_Pin = BTNLED_PIN4;
-  GPIO_Init(BTNLED_PORT4, &GPIO_InitStructure);
-	
-  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
-  GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;
-  GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
-  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_10MHz;
-  GPIO_InitStructure.GPIO_Pin = BTNLED_PIN5;
-  GPIO_Init(BTNLED_PORT5, &GPIO_InitStructure);
+
 	LED_ALL_OFF;
 	
 	System.Device.Key.KeyLedSet=KeyLedSet;

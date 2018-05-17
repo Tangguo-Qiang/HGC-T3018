@@ -20,10 +20,12 @@ AppStruct App;
 *******************************************************************************/
 static void InitData(void)
 {
-	App.SysVersion.CtrlMainVersion=MAIN_VERSION;
-	App.SysVersion.CtrlSubVersion=SUB_VERSION;
-	App.SysVersion.PowerMainVersion=1;
-	App.SysVersion.PowerSubVersion=10;
+	App.SysVersion.CtrlVersion=MAIN_VERSION;
+	App.SysVersion.CtrlVersion <<= 8;
+	App.SysVersion.CtrlVersion |= SUB_VERSION;
+	App.SysVersion.PowerVersion=1;
+	App.SysVersion.PowerVersion <<= 8;
+	App.SysVersion.PowerVersion |= 10;
 	
 	App.SensorData.PMInside =50;
   App.SensorData.CO2Inside= 600;
@@ -39,8 +41,9 @@ static void InitData(void)
 	App.SysFault.TempOutSensors =0;
 	App.SysFault.TempInSensors =0;
 	
-	App.SysCtrlPara.Power = POWER_OFF;
+	App.SysCtrlPara.Power = POWER_ON;
 	App.SysCtrlPara.AirFlowSet =CTRLFLOW_STEPS;
+	App.SysCtrlPara.AirFlowRun= App.SysCtrlPara.AirFlowSet;
 	App.SysCtrlPara.CircleModeSet= CIRCLEMODE_OUT;
 	App.SysCtrlPara.VentilateRate = RATE10TO08;
 	App.SysCtrlPara.ThermalModeSet = TEMPMODE_OFF;
@@ -82,6 +85,10 @@ static void InitData(void)
 	App.SysState.FaultFlag = 0;
 	App.SysState.FilterWarning = 0x00;
 	
+	App.RfAddrID =0;
+	App.UsedHours=0;
+	
+	App.Menu.FocusFormPointer = &App.Menu.MainForm;
 	
 	InitPara();
 	

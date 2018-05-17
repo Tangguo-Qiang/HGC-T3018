@@ -36,6 +36,12 @@ extern void Init_TouchButtons(void);
 
 extern void Init_Timer(void);
 
+extern void Init_Beep(void);
+
+extern void Init_rht(void);
+
+extern void Si4463_Init(void);
+
 /*******************************************************************************
 * 描述	    : 初始化设备
 *******************************************************************************/
@@ -81,11 +87,13 @@ void InitDevice(void)
     Init_Lcd();
 	
 	Init_TouchButtons();
-	
+	Init_Beep();
 #ifdef __WIFI_VALIDE
 	  Init_WifiUSART1();
 #endif	
     InitSystick();
+		Init_rht();
+		Si4463_Init();
 		System.Device.Rtc.RTC_SetFlag=RTC_SetFlag;
 //    NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);     // 抢占优先级|非抢占优先级,0为高
                                                         // bit3 bit2 | bit1 bit0 

@@ -66,6 +66,11 @@ TestStatus StoreParaOpt(StorePara_TypDef paratype,StoreOpt_TypDef oper)
 //			OperAddr = EEPROM_ADDRESS_ENERGYMODE;
 //			NumByteToOper = SIZEOF_ENERGYMODE;
 //			break;
+		case STORE_RFCONNECT:
+			pBuffer = (uint8_t*)&App.RfAddrID;
+			OperAddr = EEPROM_ADDRESS_RFADDRID;
+			NumByteToOper = SIZEOF_RFADDRID;
+			break;
 
 		default:
 			break;
@@ -159,6 +164,9 @@ void StorePara(void)
 //			case STORE_ENERGYMODE:
 //				flag = StoreParaOpt(STORE_ENERGYMODE,WRITETOSTORE);
 //				break;
+			case STORE_RFCONNECT:
+				flag = StoreParaOpt(STORE_RFCONNECT,WRITETOSTORE);
+				break;
 			default:
 				break;
 		}
@@ -289,7 +297,7 @@ void InitPara(void)
 		App.SysCtrlLine.TempInsideWinterLine=18;
 	
 	PostMessage(MessageProcess, FILTER_POWERON);
-	PostMessage(MessageParaUpdate, PARA_POWER_SET);
+//	PostMessage(MessageParaUpdate, PARA_POWER_SET);
 		
 
 }

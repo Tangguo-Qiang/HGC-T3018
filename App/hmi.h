@@ -5,6 +5,7 @@
 
 
 
-extern void KeyProcess(KeyActEnum key);
+extern void KeyProcessMainForm(KeyActEnum key);
+extern void KeyProcessFaultForm(KeyActEnum key);
 
 #endif

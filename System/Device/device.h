@@ -43,33 +43,34 @@
 
 #define MOTO_STARTDUTY	6000
 
-#define LCD_BL_ON   {GPIOC->BSRR = GPIO_Pin_9;GPIOA->BSRR = GPIO_Pin_8;}
-#define LCD_BL_OFF  {GPIOC->BRR  = GPIO_Pin_9;GPIOA->BRR = GPIO_Pin_8;} 
+#define WIFIUSER_MAX_LEN 50u
 
+#define LCD_BL_ON   {GPIOC->BSRR = GPIO_Pin_9;}
+#define LCD_BL_OFF  {GPIOC->BRR  = GPIO_Pin_9;}
 typedef enum 
 {
     KeyPlus              = 0x01, //key1
-    KeyLongPlus          = 0x31, //key1
+    KeyLongPlus          = 0xC1, //key1
     KeyMinus             = 0x02, //key2
-    KeyLongMinus         = 0x32, //key2
+    KeyLongMinus         = 0xC2, //key2
     KeyMode              = 0x03, //key3
-    KeyLongMode          = 0x33, //key3
+    KeyLongMode          = 0xC3, //key3
     KeyPower             = 0x04, //key4
-    KeyLongPower         = 0x34, //key4
+    KeyLongPower         = 0xC4, //key4
     KeyHeater             = 0x05, //key5
-    KeyLongHeater         = 0x35, //key5
-	
+    KeyLongHeater         = 0xC5, //key5	
 	  KeyModeMinus         =0x06,
-	  KeyLongModeMinus     =0x36,
+	  KeyLongModeMinus     =0xC6,
 	  KeyModePlus          =0x07,
-	  KeyLongModePlus      =0x37,
-	  KeyPlusMinus         =0x08,
-	  KeyLongPlusMinus     =0x38,
-	  KeyModeHeater     =0x09,
-	  KeyLongModeHeater     =0x39
-
-    
-	
+	  KeyLongModePlus      =0xC7,
+	  KeyPlusMinus       = 0x08,
+	  KeyLongPlusMinus    = 0xC8,
+	  KeyModeHeater     	= 0x09,
+	  KeyLongModeHeater   = 0xC9,
+	  KeyPowerPlus     		= 0x0A,
+	  KeyLongPowerPlus    = 0xCA,
+	  KeyPowerMinus     	= 0x0B,
+	  KeyLongPowerMinus   = 0xCB
 }KeyActEnum;
 
 typedef enum 
@@ -149,7 +150,13 @@ typedef	enum
 	HekrProdKey = 0x21
 }HekrModuleControlCode;
 
-#define WIFIUSER_MAX_LEN 50u
+typedef	enum
+{
+	RfConfig = 0x01,
+	RfSendOff = 0x02,
+	RfQuery = 0x03,
+	RfReady = 0x04
+}RfSi446xControlCode;
 
 typedef enum{
 	SWITCH_AC_RS1=(uint8_t)0x01,
@@ -190,9 +197,10 @@ typedef enum{
 
 typedef enum{
 	RATEEMPTY  = (byte)0x00,
-	RATE10TO08 = (byte)0x01,
-	RATE10TO10 = (byte)0x02,
-	RATE10TO12 = (byte)0x03
+	RATE10TO06 = (byte)0x01,
+	RATE10TO08 = (byte)0x02,
+	RATE10TO10 = (byte)0x03,
+	RATE10TO12 = (byte)0x04
 }VentilateRateTypedef;
 
 typedef enum{
@@ -233,59 +241,7 @@ typedef enum{
 }MutSetTypedef;
 
 
-typedef enum{
-	FIRSTFILTER_CHECK = (uint)0x01,
-	MIDFILTER_CHECK = (uint)0x02,
-	ESPFILTER_CHECK = (uint)0x04,
-	HPFILTER_CHECK = (uint)0x08,
-	POWERBASE_FAULT = (uint)0x10,
-	SENSOROUTTEMP_FAULT = (uint)0x20,
-	SENSORINTEMP_FAULT = (uint)0x40,
-	SENSORRH_FAULT = (uint)0x80,
-	SENSORCO2_FAULT = (uint)0x100,
-	SENSORPM_FAULT = (uint)0x200,
-	XFMOTO_FAULT = (uint)0x400,
-	PFMOTO_FAULT = (uint)0x800,
-	CO2INSIDEBEYOND=(uint)0x1000,
-	PMINSIDEBEYONG=(uint)0x2000,
-	HGA_FAULT = (uint)0x4000,
-	STORE_FAULT=(uint)0x8000,
 
-	FAULTICON_DISP = (uint)0x10000
-}FaultTypedef;
-
-
-typedef struct 
-{
-  signed char TempInside;                 
-  byte RHInside;
-  signed char TempOutside;
-  ushort CO2Inside;
-  ushort PMInside;
-}SensorDataTypedef;
-
-
-typedef	struct 
-{
-	PowerSetTypedef Power;
-	CircleModeSetTypedef CircleModeSet;
-	TempModeTypedef ThermalModeSet;
-	AuxiliaryHeatTypedef AuxiliaryHeatSet;
-	VentilateRateTypedef VentilateRate;
-	byte  AirFlowSet; 
-	byte  AirFlowRun; 
-	byte ShutTimer;
-	MutSetTypedef MuteSet;
-	ChildLockTypedef ChildLock;
-}SysCtrlParaTypedef; 
-
-typedef struct
-{
-	uint WifiState;
-	uint RFState;
-	uint FaultFlag;
-	uint FilterWarning;
-}SysStateTypedef;
 
 
 #define WIFI_STATE					0x00000007
@@ -295,9 +251,11 @@ typedef struct
 
 
 #define RF_STATE					0x00000007
+#define RF_STATE_SLEEP		0x00000000
 #define RF_STATE_CONFIG		0x00000001
-#define RF_STATE_STA			0x00000002
-#define RF_STATE_STA_AP		0x00000004
+#define RF_STATE_CONNECT	0x00000002
+#define RF_STATE_COMM			0x00000004
+#define RF_STATE_LOSE			0x00000008
 
 extern void InitDevice(void);
 
